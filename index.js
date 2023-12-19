@@ -1,7 +1,23 @@
 const express = require("express");
+let morgan = require("morgan");
+
 const app = express();
 
 app.use(express.json());
+app.use(
+  morgan(function (tokens, req, res) {
+    return [
+      tokens.method(req, res),
+      tokens.url(req, res),
+      tokens.status(req, res),
+      tokens.res(req, res, "content-length"),
+      "-",
+      tokens["response-time"](req, res),
+      "ms",
+      JSON.stringify(req.body),
+    ].join(" ");
+  })
+);
 
 let numbers = [
   {
@@ -55,6 +71,8 @@ app.post("/api/persons", (request, response) => {
   console.log(`Request body: ${request.body}`);
   const newName = request.body.name;
   const newNumber = request.body.number;
+
+  //   morgan(request, response, function (err) {
   if (newName && newNumber) {
     nameExists = numbers.find((number) => number.name === newName);
     console.log(nameExists);
@@ -69,11 +87,12 @@ app.post("/api/persons", (request, response) => {
     const newPerson = { name: newName, number: newNumber, id: id + 1 };
     console.log(newPerson);
     numbers = numbers.concat(newPerson);
-    response.json(newPerson);
+    return response.json(newPerson);
   }
   return response.status(400).json({
     error: "Name and Number must be present.",
   });
+  //   });
 });
 
 app.get("/info", (request, response) => {
