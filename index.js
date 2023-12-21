@@ -1,6 +1,7 @@
 const express = require("express");
 let morgan = require("morgan");
 const cors = require("cors");
+const Person = require("./models/phonebook");
 const app = express();
 
 app.use(express.static("dist"));
@@ -22,42 +23,17 @@ app.use(
   })
 );
 
-let numbers = [
-  {
-    id: 1,
-    name: "Arto Hellas",
-    number: "040-123456",
-  },
-  {
-    id: 2,
-    name: "Ada Lovelace",
-    number: "39-44-5323523",
-  },
-  {
-    id: 3,
-    name: "Dan Abramov",
-    number: "12-43-234345",
-  },
-  {
-    id: 4,
-    name: "Mary Poppendieck",
-    number: "39-23-6423122",
-  },
-];
-
 app.get("/api/persons", (request, response) => {
-  response.json(numbers);
+  Person.find({}).then((result) => {
+    response.json(result);
+  });
 });
 
 app.get("/api/persons/:id", (request, response) => {
-  const id = Number(request.params.id);
-  number = numbers.find((number) => number.id === id);
-
-  if (number) {
-    return response.json(number);
-  } else {
-    return response.status(404).end();
-  }
+  console.log("Request id: ", request.params.id);
+  number = Person.findById(request.params.id).then((person) =>
+    response.json(person)
+  );
 });
 
 app.delete("/api/persons/:id", (request, response) => {
@@ -72,30 +48,27 @@ app.delete("/api/persons/:id", (request, response) => {
 
 app.post("/api/persons", (request, response) => {
   console.log(`Request body: ${request.body}`);
+  console.log(`Request name: ${request.body.name}`);
+  console.log(`Request number: ${request.body.number}`);
   const newName = request.body.name;
   const newNumber = request.body.number;
 
   //   morgan(request, response, function (err) {
   if (newName && newNumber) {
-    nameExists = numbers.find((number) => number.name === newName);
-    console.log(nameExists);
+    console.log("We're in the logic");
+    const nameExists = false;
     if (nameExists) {
       return response.status(400).json({
         error: `name must be unique`,
       });
     }
-    const id =
-      numbers.length > 0 ? Math.max(...numbers.map((number) => number.id)) : 0;
 
-    const newPerson = { name: newName, number: newNumber, id: id + 1 };
-    console.log(newPerson);
-    numbers = numbers.concat(newPerson);
-    return response.json(newPerson);
+    const person = new Person({ name: newName, number: newNumber });
+    person.save().then((savedPerson) => {
+      response.json(savedPerson);
+      console.log("SAVED");
+    });
   }
-  return response.status(400).json({
-    error: "Name and Number must be present.",
-  });
-  //   });
 });
 
 app.get("/info", (request, response) => {
